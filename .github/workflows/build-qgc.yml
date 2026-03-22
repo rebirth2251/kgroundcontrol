@@ -10,17 +10,27 @@ jobs:
     name: Linux Build
     runs-on: ubuntu-22.04
 
+    env:
+      QT_VERSION: 6.10.1
+      QT_DIR: ${{ github.workspace }}/Qt
+
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           submodules: recursive
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+          cache: 'pip'
 
       - name: Install system dependencies
         run: |
           sudo apt update
           sudo apt install -y \
-            cmake ninja-build build-essential git python3 python3-pip \
+            cmake ninja-build build-essential git \
             libxcb-cursor0 \
             libgl1-mesa-dev libpulse-dev libudev-dev \
             gstreamer1.0-plugins-base \
@@ -28,23 +38,26 @@ jobs:
             gstreamer1.0-plugins-bad \
             gstreamer1.0-libav
 
-      - name: Install Qt 6.10.1
-        uses: jurplel/install-qt-action@v4
-        with:
-          version: '6.10.1'
-          host: 'linux'
-          target: 'desktop'
-          arch: 'gcc_64'
-          modules: 'qtcharts qtlocation qtmultimedia qtpositioning qtquick3d qtspeech qt5compat qtserialport'
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install \
+            aqtinstall==3.1.* \
+            future requests jinja2
 
-      - name: Show Qt path
-        run: echo "QT_ROOT_DIR=$QT_ROOT_DIR"
+      - name: Install Qt 6.10.1
+        run: |
+          python -m aqt install-qt linux desktop $QT_VERSION gcc_64 \
+            -O "$QT_DIR" \
+            -m qtcharts qtlocation qtmultimedia qtpositioning qtquick3d qtspeech qt5compat qtserialport
 
       - name: Configure
-        run: ${{ env.QT_ROOT_DIR }}/bin/qt-cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+        run: |
+          "$QT_DIR/$QT_VERSION/gcc_64/bin/qt-cmake" -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
 
       - name: Build
-        run: cmake --build build --parallel
+        run: |
+          cmake --build build --parallel
 
       - name: Upload Linux artifact
         uses: actions/upload-artifact@v4
@@ -57,35 +70,48 @@ jobs:
     name: Windows Build
     runs-on: windows-2022
 
+    env:
+      QT_VERSION: 6.10.1
+      QT_DIR: ${{ github.workspace }}\Qt
+
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           submodules: recursive
 
-      - name: Install Qt 6.10.1
-        uses: jurplel/install-qt-action@v4
+      - name: Setup Python
+        uses: actions/setup-python@v6
         with:
-          version: '6.10.1'
-          host: 'windows'
-          target: 'desktop'
-          arch: 'win64_msvc2022_64'
-          modules: 'qtcharts qtlocation qtmultimedia qtpositioning qtquick3d qtspeech qt5compat qtserialport'
+          python-version: '3.12'
+          cache: 'pip'
 
-      - name: Setup MSVC
-        uses: ilammy/msvc-dev-cmd@v1
-
-      - name: Show Qt path
+      - name: Install Python dependencies
         shell: pwsh
-        run: echo "QT_ROOT_DIR=$env:QT_ROOT_DIR"
+        run: |
+          python -m pip install --upgrade pip
+          pip install `
+            aqtinstall==3.1.* `
+            future requests jinja2
+
+      - name: Install Qt 6.10.1
+        shell: pwsh
+        run: |
+          python -m aqt install-qt windows desktop $env:QT_VERSION win64_msvc2022_64 `
+            -O "$env:QT_DIR" `
+            -m qtcharts qtlocation qtmultimedia qtpositioning qtquick3d qtspeech qt5compat qtserialport
 
       - name: Configure
-        shell: pwsh
-        run: cmake -B build -S . -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$env:QT_ROOT_DIR"
+        shell: cmd
+        run: |
+          call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+          cmake -B build -S . -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="%QT_DIR%\%QT_VERSION%\msvc2022_64"
 
       - name: Build
-        shell: pwsh
-        run: cmake --build build --config Release --parallel
+        shell: cmd
+        run: |
+          call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+          cmake --build build --config Release --parallel
 
       - name: Upload Windows artifact
         uses: actions/upload-artifact@v4
