@@ -40,13 +40,13 @@ jobs:
       - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install aqtinstall==3.1.* future requests jinja2
+          pip install aqtinstall future requests jinja2
 
       - name: Install Qt 6.10.1
         run: |
           python -m aqt install-qt linux desktop $QT_VERSION gcc_64 \
             -O "$QT_DIR" \
-            -m qtcharts qtlocation qtmultimedia qtpositioning qtquick3d qtspeech qt5compat qtserialport
+            -m qtcharts qthttpserver qtlocation qtmultimedia qtpositioning qtquick3d qtserialport qtspeech qt5compat
 
       - name: Configure
         run: |
@@ -86,14 +86,14 @@ jobs:
         shell: pwsh
         run: |
           python -m pip install --upgrade pip
-          pip install aqtinstall==3.1.* future requests jinja2
+          pip install aqtinstall future requests jinja2
 
       - name: Install Qt 6.10.1
         shell: pwsh
         run: |
           python -m aqt install-qt windows desktop $env:QT_VERSION win64_msvc2022_64 `
             -O "$env:QT_DIR" `
-            -m qtcharts qtlocation qtmultimedia qtpositioning qtquick3d qtspeech qt5compat qtserialport
+            -m qtcharts qthttpserver qtlocation qtmultimedia qtpositioning qtquick3d qtserialport qtspeech qt5compat
 
       - name: Configure
         shell: cmd
