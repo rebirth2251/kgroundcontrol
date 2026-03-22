@@ -13,29 +13,35 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - name: Install system dependencies
         run: |
           sudo apt update
           sudo apt install -y \
-            cmake ninja-build build-essential git \
+            cmake ninja-build build-essential git python3 python3-pip \
+            libxcb-cursor0 \
             libgl1-mesa-dev libpulse-dev libudev-dev \
             gstreamer1.0-plugins-base \
             gstreamer1.0-plugins-good \
             gstreamer1.0-plugins-bad \
             gstreamer1.0-libav
 
-      - name: Install Qt
+      - name: Install Qt 6.10.1
         uses: jurplel/install-qt-action@v4
         with:
-          version: '6.8.3'
+          version: '6.10.1'
           host: 'linux'
           target: 'desktop'
           arch: 'gcc_64'
           modules: 'qtcharts qtlocation qtmultimedia qtpositioning qtquick3d qtspeech qt5compat qtserialport'
 
+      - name: Show Qt path
+        run: echo "QT_ROOT_DIR=$QT_ROOT_DIR"
+
       - name: Configure
-        run: cmake -B build -S . -DCMAKE_BUILD_TYPE=Release -G Ninja
+        run: ${{ env.QT_ROOT_DIR }}/bin/qt-cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
 
       - name: Build
         run: cmake --build build --parallel
@@ -54,11 +60,13 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
-      - name: Install Qt
+      - name: Install Qt 6.10.1
         uses: jurplel/install-qt-action@v4
         with:
-          version: '6.8.3'
+          version: '6.10.1'
           host: 'windows'
           target: 'desktop'
           arch: 'win64_msvc2022_64'
@@ -67,10 +75,16 @@ jobs:
       - name: Setup MSVC
         uses: ilammy/msvc-dev-cmd@v1
 
+      - name: Show Qt path
+        shell: pwsh
+        run: echo "QT_ROOT_DIR=$env:QT_ROOT_DIR"
+
       - name: Configure
-        run: cmake -B build -S . -DCMAKE_BUILD_TYPE=Release
+        shell: pwsh
+        run: cmake -B build -S . -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$env:QT_ROOT_DIR"
 
       - name: Build
+        shell: pwsh
         run: cmake --build build --config Release --parallel
 
       - name: Upload Windows artifact
